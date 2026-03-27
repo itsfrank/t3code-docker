@@ -2,21 +2,30 @@
 
 ARG NODE_VERSION=24.13.1
 
-FROM --platform=linux/amd64 oven/bun:1.3.9 AS build
+FROM oven/bun:1.3.9 AS build
 
 ARG NODE_VERSION
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV npm_config_platform=linux
+ENV npm_config_arch=x64
+ENV npm_config_target_arch=x64
+ENV PREBUILD_ARCH=x64
 
 WORKDIR /src/repo
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    g++ \
+    make \
+    python3 \
     xz-utils \
   && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
-RUN bun install --frozen-lockfile
+RUN bun install --frozen-lockfile --concurrent-scripts 1
 RUN bunx turbo run build --filter=@t3tools/contracts --filter=@t3tools/shared --filter=@t3tools/web --filter=t3
 
 RUN mkdir -p /bundle/node /bundle/t3code/apps/server /out \
